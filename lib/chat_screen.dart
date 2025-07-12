@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ChatScreen extends StatefulWidget {
   final String receiverId;
@@ -138,8 +139,14 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<String?> uploadToCloudinary(File file, {required bool isVideo}) async {
-    const cloudName = 'YOUR_CLOUD_NAME';
-    const uploadPreset = 'YOUR_UNSIGNED_PRESET';
+    final cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'];
+    final uploadPreset = dotenv.env['CLOUDINARY_UPLOAD_PRESET'];
+
+    if (cloudName == null || uploadPreset == null) {
+      print('Thiếu biến môi trường Cloudinary');
+      return null;
+    }
+
     final type = isVideo ? 'video' : 'image';
     final url = Uri.parse(
       'https://api.cloudinary.com/v1_1/$cloudName/$type/upload',

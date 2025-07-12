@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -125,8 +126,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<String?> uploadToCloudinary(File file) async {
-    const cloudName = 'YOUR_CLOUD_NAME';
-    const uploadPreset = 'YOUR_UNSIGNED_PRESET';
+    final cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'];
+    final uploadPreset = dotenv.env['CLOUDINARY_UPLOAD_PRESET'];
+
+    if (cloudName == null || uploadPreset == null) {
+      print('Thiếu biến môi trường Cloudinary');
+      return null;
+    }
     final url = Uri.parse(
       'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
     );
