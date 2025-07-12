@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'login_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -63,23 +64,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return;
 
-    await supabase
-        .from('users')
-        .update({
-          'name': nameController.text.trim(),
-          'avatar': avatarController.text.trim(),
-          'gender': genderController.text.trim(),
-          'address': addressController.text.trim(),
-          'bio': bioController.text.trim(),
-          'birthdate': selectedBirthDate?.toIso8601String(),
-        })
-        .eq('id', userId);
+    await supabase.from('users').update({
+      'name': nameController.text.trim(),
+      'avatar': avatarController.text.trim(),
+      'gender': genderController.text.trim(),
+      'address': addressController.text.trim(),
+      'bio': bioController.text.trim(),
+      'birthdate': selectedBirthDate?.toIso8601String(),
+    }).eq('id', userId);
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Cập nhật thành công')));
-
-    setState(() {});
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cập nhật thành công')),
+      );
+    }
   }
 
   Future<void> _signOut() async {
@@ -118,9 +116,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Tải ảnh thất bại')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tải ảnh thất bại')),
+        );
       }
     }
   }
@@ -133,14 +131,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       print('Thiếu biến môi trường Cloudinary');
       return null;
     }
+
     final url = Uri.parse(
       'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
     );
 
-    final request =
-        http.MultipartRequest('POST', url)
-          ..fields['upload_preset'] = uploadPreset
-          ..files.add(await http.MultipartFile.fromPath('file', file.path));
+    final request = http.MultipartRequest('POST', url)
+      ..fields['upload_preset'] = uploadPreset
+      ..files.add(await http.MultipartFile.fromPath('file', file.path));
 
     final response = await request.send();
     final res = await http.Response.fromStream(response);
@@ -172,103 +170,176 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const SizedBox(height: 30),
-          GestureDetector(
-            onTap: _pickAndUploadAvatar,
-            child: CircleAvatar(
-              radius: 50,
-              backgroundImage:
-                  avatarController.text.isNotEmpty
-                      ? NetworkImage(avatarController.text)
-                      : null,
-              child:
-                  avatarController.text.isEmpty
-                      ? const Icon(Icons.person, size: 50)
-                      : null,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Thông tin cá nhân'),
+        backgroundColor: Colors.teal,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Center(
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      if (avatarController.text.isNotEmpty) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FullScreenImage(
+                                imageUrl: avatarController.text),
+                          ),
+                        );
+                      }
+                    },
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.teal.withOpacity(0.2),
+                      backgroundImage: avatarController.text.isNotEmpty
+                          ? NetworkImage(avatarController.text)
+                          : null,
+                      child: avatarController.text.isEmpty
+                          ? const Icon(Icons.person, size: 60)
+                          : null,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: _pickAndUploadAvatar,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        child: const Icon(Icons.edit, color: Colors.teal),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '(Nhấn vào ảnh để thay đổi)',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-          Text(email ?? '', style: const TextStyle(fontSize: 16)),
-          const SizedBox(height: 30),
-          TextField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: 'Tên hiển thị',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: genderController,
-            decoration: const InputDecoration(
-              labelText: 'Giới tính',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: addressController,
-            decoration: const InputDecoration(
-              labelText: 'Địa chỉ',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: _pickBirthdate,
-            child: AbsorbPointer(
-              child: TextFormField(
-                decoration: const InputDecoration(
-                  labelText: 'Ngày sinh',
-                  border: OutlineInputBorder(),
-                ),
-                controller: TextEditingController(
-                  text:
-                      selectedBirthDate != null
-                          ? '${selectedBirthDate!.day}/${selectedBirthDate!.month}/${selectedBirthDate!.year}'
-                          : '',
+            const SizedBox(height: 8),
+            Text(email ?? '', style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 30),
+            _buildSectionTitle("Thông tin cá nhân"),
+            const SizedBox(height: 12),
+            _buildTextField("Tên hiển thị", nameController),
+            const SizedBox(height: 12),
+            _buildTextField("Giới tính", genderController),
+            const SizedBox(height: 12),
+            _buildTextField("Địa chỉ", addressController),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _pickBirthdate,
+              child: AbsorbPointer(
+                child: TextFormField(
+                  decoration: _inputDecoration("Ngày sinh"),
+                  controller: TextEditingController(
+                    text: selectedBirthDate != null
+                        ? "${selectedBirthDate!.day}/${selectedBirthDate!.month}/${selectedBirthDate!.year}"
+                        : '',
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: bioController,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Tiểu sử (bio)',
-              border: OutlineInputBorder(),
+            const SizedBox(height: 12),
+            _buildTextField("Tiểu sử (bio)", bioController, maxLines: 3),
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.save),
+              label: const Text('Lưu thay đổi'),
+              onPressed: _saveChanges,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 30),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.save),
-            label: const Text('Lưu thay đổi'),
-            onPressed: _saveChanges,
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.logout),
+              label: const Text('Đăng xuất'),
+              onPressed: _signOut,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Row(
+      children: [
+        const Icon(Icons.info_outline, color: Colors.teal),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.logout),
-            label: const Text('Đăng xuất'),
-            onPressed: _signOut,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller,
+      {int maxLines = 1}) {
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: _inputDecoration(label),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+}
+
+class FullScreenImage extends StatelessWidget {
+  final String imageUrl;
+  const FullScreenImage({super.key, required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Center(child: Image.network(imageUrl)),
+          Positioned(
+            top: 40,
+            left: 16,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
             ),
           ),
         ],

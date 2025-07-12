@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'chat_screen.dart';
+
 class UserListScreen extends StatefulWidget {
   final void Function(String receiverId)? onUserSelected;
 
@@ -44,7 +46,7 @@ class _UserListScreenState extends State<UserListScreen> {
           isLoading
               ? const Center(child: CircularProgressIndicator())
               : users.isEmpty
-              ? const Center(child: Text('Chưa có người dùng nào'))
+              ? const Center(child: Text('Chưa có người dùng nào để hiển thị'))
               : ListView.builder(
                 itemCount: users.length,
                 itemBuilder: (context, index) {
@@ -60,7 +62,12 @@ class _UserListScreenState extends State<UserListScreen> {
                     title: Text(user['name'] ?? 'Không tên'),
                     subtitle: Text(user['email'] ?? ''),
                     onTap: () {
-                      widget.onUserSelected?.call(user['id']);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(receiverId: user['id']),
+                        ),
+                      );
                     },
                   );
                 },

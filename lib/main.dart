@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
+import 'chat_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load file .env
   await dotenv.load(fileName: ".env");
 
-  // Lấy biến từ môi trường
   final supabaseUrl = dotenv.env['SUPABASE_URL']!;
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY']!;
 
@@ -30,6 +29,12 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Chat',
       home: user == null ? const LoginScreen() : const HomeScreen(),
+      routes: {
+        '/chat': (context) {
+          final userId = ModalRoute.of(context)!.settings.arguments as String;
+          return ChatScreen(receiverId: userId);
+        },
+      },
     );
   }
 }

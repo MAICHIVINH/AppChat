@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'user_list_screen.dart';
 import 'profile_screen.dart';
 import 'chat_screen.dart';
+import 'home_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,12 +29,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> get _screens => [
-    UserListScreen(onUserSelected: _onUserSelected),
-    selectedReceiverId != null
-        ? ChatScreen(receiverId: selectedReceiverId!)
-        : const Center(child: Text("Chưa chọn người để chat")),
-    const ProfileScreen(),
-  ];
+  HomePage(onNavigate: _onItemTapped),
+  const UserListScreen(),
+  const ProfileScreen(),
+];
+
 
   @override
   Widget build(BuildContext context) {
