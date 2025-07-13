@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'edit_profile_screen.dart';
 
 import 'login_screen.dart';
 
@@ -64,19 +65,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return;
 
-    await supabase.from('users').update({
-      'name': nameController.text.trim(),
-      'avatar': avatarController.text.trim(),
-      'gender': genderController.text.trim(),
-      'address': addressController.text.trim(),
-      'bio': bioController.text.trim(),
-      'birthdate': selectedBirthDate?.toIso8601String(),
-    }).eq('id', userId);
+    await supabase
+        .from('users')
+        .update({
+          'name': nameController.text.trim(),
+          'avatar': avatarController.text.trim(),
+          'gender': genderController.text.trim(),
+          'address': addressController.text.trim(),
+          'bio': bioController.text.trim(),
+          'birthdate': selectedBirthDate?.toIso8601String(),
+        })
+        .eq('id', userId);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cập nhật thành công')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Cập nhật thành công')));
     }
   }
 
@@ -116,9 +120,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tải ảnh thất bại')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Tải ảnh thất bại')));
       }
     }
   }
@@ -136,9 +140,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
     );
 
-    final request = http.MultipartRequest('POST', url)
-      ..fields['upload_preset'] = uploadPreset
-      ..files.add(await http.MultipartFile.fromPath('file', file.path));
+    final request =
+        http.MultipartRequest('POST', url)
+          ..fields['upload_preset'] = uploadPreset
+          ..files.add(await http.MultipartFile.fromPath('file', file.path));
 
     final response = await request.send();
     final res = await http.Response.fromStream(response);
@@ -170,9 +175,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -180,6 +183,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('Thông tin cá nhân'),
         backgroundColor: Colors.teal,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+              );
+              // Khi từ EditProfileScreen pop về, tự reload lại
+              _loadUserInfo();
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -196,8 +212,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => FullScreenImage(
-                                imageUrl: avatarController.text),
+                            builder:
+                                (_) => FullScreenImage(
+                                  imageUrl: avatarController.text,
+                                ),
                           ),
                         );
                       }
@@ -205,12 +223,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: CircleAvatar(
                       radius: 60,
                       backgroundColor: Colors.teal.withOpacity(0.2),
-                      backgroundImage: avatarController.text.isNotEmpty
-                          ? NetworkImage(avatarController.text)
-                          : null,
-                      child: avatarController.text.isEmpty
-                          ? const Icon(Icons.person, size: 60)
-                          : null,
+                      backgroundImage:
+                          avatarController.text.isNotEmpty
+                              ? NetworkImage(avatarController.text)
+                              : null,
+                      child:
+                          avatarController.text.isEmpty
+                              ? const Icon(Icons.person, size: 60)
+                              : null,
                     ),
                   ),
                   Positioned(
@@ -242,36 +262,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 12),
             _buildTextField("Địa chỉ", addressController),
             const SizedBox(height: 12),
-            GestureDetector(
-              onTap: _pickBirthdate,
-              child: AbsorbPointer(
-                child: TextFormField(
-                  decoration: _inputDecoration("Ngày sinh"),
-                  controller: TextEditingController(
-                    text: selectedBirthDate != null
+            TextFormField(
+              readOnly: true,
+              decoration: _inputDecoration("Ngày sinh"),
+              controller: TextEditingController(
+                text:
+                    selectedBirthDate != null
                         ? "${selectedBirthDate!.day}/${selectedBirthDate!.month}/${selectedBirthDate!.year}"
                         : '',
-                  ),
-                ),
               ),
             ),
+
             const SizedBox(height: 12),
             _buildTextField("Tiểu sử (bio)", bioController, maxLines: 3),
             const SizedBox(height: 30),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.save),
-              label: const Text('Lưu thay đổi'),
-              onPressed: _saveChanges,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
             OutlinedButton.icon(
               icon: const Icon(Icons.logout),
               label: const Text('Đăng xuất'),
@@ -296,20 +300,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ],
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller,
-      {int maxLines = 1}) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+  }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
+      readOnly: true, // <-- CHỈ ĐỌC
       decoration: _inputDecoration(label),
     );
   }
